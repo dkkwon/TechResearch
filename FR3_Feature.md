@@ -1,7 +1,24 @@
-목표를 FR3 기능 구현이 아니라, 현재 srsRAN 에서 구현된 기능, 용량을 정리 하고 싶습니다. 먼저 어떤 feature 들을 체크해야 할지 정리해야 하겠습니다. 
-결과물 : Feature 정리 (상위 항목, 하위 항목, 지원 범위 ), 지원 범위는 명확하게 지원, 미지원, 또는 어떤 기능이나 수치까지 지원으로 표현되어야 함
+1차 질문)
+이동 통신에서 FR3 기능을 구현하기 위해 관련된 오픈 소스를 검토하고 있습니다.
+FR3 는 5G Advanced 기능으로 볼 수 있고, 현재 5G 기반으로 개발이 됩니다.
+FR3 의 기반이 되는 5G  Feature/Capacity을 정리 하고 싶습니다. 
+먼저 어떤 feature 들을 체크해야 할지 정리해야 하겠습니다. 
 
+결과물 : Feature 정리 (상위 항목, 하위 항목, 지원 범위 )
+                 지원 범위는 명확하게 지원/미지원/특정 기능 지원/KPI (수치)로 표현되어야 함
+
+2차 질문)
 srsRAN은 OCUDU 로 변경되었습니다. https://gitlab.com/ocudu/ocudu 위의 Feature 정리된 내용에 대해서 OCUDU 코드를 기반으로 내용을 채워서 주세요
+
+아래의 내용들이 Feature 에 포함되어야 함  (1차 질문에서)
+1. Attached UE 수 / TTI당 스케줄링 가능 UE 수
+2. Downlink 자원할당 가능 BW
+3. Cell당 스케줄 가능한 DL MIMO 최대 Layer 수
+4. SU-MIMO / MU-MIMO 지원 여부
+5. SRS 채널 추정 지원 여부
+6. O-RAN Fronthaul 지원 BW 최대 용량
+7. PHY 가속기 / LDPC SW 동작 여부
+
 
 아래 내용은 현재 [OCUDU GitLab](https://gitlab.com/ocudu/ocudu?utm_source=chatgpt.com) 및 공개 문서 기준으로,
 “FR3 readiness 분석용 Capability Matrix” 관점에서 정리한 것입니다.
