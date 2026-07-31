@@ -1,3 +1,652 @@
+좋은 질문입니다. **Table 1. "Value of GPU by RAN workload"는 이 기사의 핵심 표**입니다. 이 표가 설명하는 것은 단순히 "GPU가 빠르다"가 아니라,
+
+> **RAN의 어떤 알고리즘들이 계산량 제한 때문에 단순화되어 왔으며, GPU를 사용하면 어떤 부분을 더 고도화하여 스펙트럼 효율을 높일 수 있는가**
+
+를 정리한 것입니다. ([NVIDIA Developer][1])
+
+표 내용을 RAN 개발 관점에서 풀어서 설명하겠습니다.
+
+---
+
+# Table 1 전체 구조
+
+NVIDIA는 각 RAN workload를 다음 3가지 관점으로 설명합니다. ([NVIDIA Developer][1])
+
+| 항목                          | 의미          |
+| --------------------------- | ----------- |
+| RAN workload                | 어떤 RAN 기능인가 |
+| Key compute characteristics | 왜 계산량이 큰가   |
+| Why GPUs matter             | GPU가 왜 필요한가 |
+
+대상 workload는 6개입니다.
+
+1. MU-MIMO UE Pairing
+2. Beamforming & Precoding
+3. DRL Link Adaptation
+4. Channel Estimation
+5. Scheduling
+6. Neural Receiver
+
+---
+
+# 1. MU-MIMO UE Pairing
+
+## 기존 문제
+
+Massive MIMO에서는 많은 UE 중에서 어떤 UE들을 동시에 묶을지가 매우 중요합니다.
+
+예:
+
+```
+100 UE 후보
+
+↓
+
+동시에 전송할 16 UE 선택
+
+↓
+
+MU-MIMO Group 생성
+```
+
+해야 합니다.
+
+좋은 조합:
+
+```
+UE1  방향 10°
+UE2  방향 90°
+UE3  방향 180°
+```
+
+→ 서로 간섭 적음
+
+나쁜 조합:
+
+```
+UE1
+UE2
+UE3
+
+모두 비슷한 방향
+```
+
+→ 간섭 증가
+
+---
+
+## 계산량
+
+최적화하려면
+
+```
+UE 후보 N개
+
+↓
+
+가능한 조합 탐색
+
+↓
+
+Channel Orthogonality 계산
+
+↓
+
+Throughput 예측
+
+↓
+
+최적 Group 선택
+```
+
+이 필요합니다.
+
+조합 문제가 발생합니다.
+
+---
+
+## GPU 가치
+
+기존:
+
+```
+CPU
+
+↓
+
+제한된 후보만 검색
+
+↓
+
+Heuristic
+```
+
+GPU:
+
+```
+GPU
+
+↓
+
+많은 후보 병렬 평가
+
+↓
+
+AI 기반 UE Pairing
+```
+
+가능합니다.
+
+즉:
+
+> GPU는 더 많은 UE 조합을 실시간 탐색하여 MU-MIMO 효율을 높인다.
+
+입니다. ([NVIDIA Developer][1])
+
+---
+
+# 2. Beamforming & Precoding ⭐ 가장 중요
+
+Massive MIMO에서 GPU 필요성을 설명할 때 가장 핵심입니다.
+
+---
+
+## 기존 방식
+
+대표적으로:
+
+```
+Channel Matrix H
+
+↓
+
+ZF / rZF
+
+↓
+
+Precoding Weight
+```
+
+를 계산합니다.
+
+하지만 계산량 때문에 단순화합니다.
+
+---
+
+## GPU 사용 시
+
+더 복잡한 모델 가능:
+
+```
+Channel 정보
+
++
+UE 위치
+
++
+Interference
+
+↓
+
+AI Beamforming
+
+↓
+
+최적 Weight 생성
+```
+
+---
+
+예를 들어 기사에서는:
+
+64T64R
+
+16 UE
+
+2 Layer/UE
+
+환경에서:
+
+기존 rZF:
+
+```
+272M FLOPs
+```
+
+AI Beamforming:
+
+```
+2.58B FLOPs
+```
+
+약 10배 계산량 증가가 필요하지만,
+
+결과:
+
+* 16 Layer: 약 1.28배 throughput 증가
+* 32 Layer: 약 1.62배 throughput 증가
+
+가능하다고 설명합니다. ([NVIDIA Developer][1])
+
+---
+
+## GPU가 필요한 이유
+
+핵심은:
+
+```
+더 좋은 알고리즘
+
+↓
+
+더 많은 계산량
+
+↓
+
+GPU가 처리
+```
+
+입니다.
+
+즉:
+
+> GPU는 기존 Beamforming을 빠르게 하는 것이 아니라, 기존에는 계산량 때문에 사용할 수 없었던 더 좋은 Beamforming 알고리즘을 가능하게 한다.
+
+입니다.
+
+---
+
+# 3. DRL Link Adaptation
+
+## 기존 방식
+
+현재 대부분:
+
+```
+CQI
+
+↓
+
+OLLA
+
+↓
+
+MCS 선택
+```
+
+입니다.
+
+규칙 기반입니다.
+
+---
+
+## AI 방식
+
+입력:
+
+```
+CQI History
+
+ACK/NACK
+
+Channel 변화
+
+Mobility
+
+Interference
+```
+
+↓
+
+DRL Model
+
+↓
+
+최적 MCS 선택
+
+---
+
+장점:
+
+* Cell Edge 성능 개선
+* 빠른 채널 변화 대응
+* BLER 최적화
+
+---
+
+문제:
+
+AI 모델이 커질수록
+
+```
+Inference 계산량 증가
+```
+
+합니다.
+
+---
+
+GPU 가치:
+
+CPU:
+
+```
+작은 모델
+
+낮은 정확도
+```
+
+GPU:
+
+```
+큰 모델
+
+Batch inference
+
+낮은 latency
+```
+
+가능.
+
+기사에서는 DRL Link Adaptation이 기존 OLLA 대비 약 1.3배 throughput 향상을 보여준다고 설명합니다. ([NVIDIA Developer][1])
+
+---
+
+# 4. Channel Estimation
+
+Massive MIMO에서 매우 중요한 부분입니다.
+
+---
+
+## 기존
+
+Channel estimation:
+
+```
+SRS / DMRS
+
+↓
+
+Channel Matrix H 계산
+```
+
+입니다.
+
+안테나 증가:
+
+```
+64T64R
+
+↓
+
+128T128R
+
+↓
+
+512T512R
+```
+
+하면 계산량 증가.
+
+---
+
+## GPU 가치
+
+더 많은 정보를 사용할 수 있습니다.
+
+예:
+
+기존:
+
+```
+현재 Pilot만 사용
+```
+
+GPU:
+
+```
+Pilot
+
++
+과거 Channel
+
++
+공간 정보
+
++
+AI 모델
+```
+
+사용 가능.
+
+결과:
+
+* 더 정확한 CSI
+* Pilot overhead 감소
+* 더 높은 Layer 가능
+
+입니다. ([NVIDIA Developer][1])
+
+---
+
+# 5. Scheduling
+
+## 기존 Scheduler
+
+CPU 기반:
+
+```
+UE 선택
+
+↓
+
+PRB 할당
+
+↓
+
+Fairness 계산
+```
+
+입니다.
+
+---
+
+하지만 미래:
+
+```
+Multi-cell
+
++
+MU-MIMO
+
++
+Beam 정보
+
++
+Traffic prediction
+```
+
+까지 고려해야 합니다.
+
+---
+
+문제:
+
+조합 폭발
+
+---
+
+GPU:
+
+```
+많은 후보 평가
+
+병렬 최적화
+
+AI Scheduler
+```
+
+가능.
+
+즉:
+
+> GPU는 Scheduler의 검색 공간을 확장한다.
+
+입니다. ([NVIDIA Developer][1])
+
+---
+
+# 6. Neural Receiver
+
+가장 6G에 가까운 항목입니다.
+
+---
+
+기존 Receiver:
+
+```
+FFT
+
+↓
+
+Channel Equalization
+
+↓
+
+Detection
+```
+
+---
+
+AI Receiver:
+
+```
+IQ Sample
+
+↓
+
+Neural Network
+
+↓
+
+Detection
+```
+
+입니다.
+
+---
+
+문제:
+
+Waveform 수준 AI는
+
+매 샘플마다
+
+대량 Tensor 계산 필요.
+
+CPU:
+
+불가능
+
+GPU:
+
+가능
+
+이라는 논리입니다. ([NVIDIA Developer][1])
+
+---
+
+# 표를 한 장으로 재정리하면
+
+| Workload           | 기존 한계          | GPU가 제공하는 것         |
+| ------------------ | -------------- | ------------------- |
+| MU-MIMO Pairing    | 제한된 UE 검색      | 대규모 조합 탐색           |
+| Beamforming        | 단순 Beam Weight | 고복잡도 AI Beamforming |
+| Link Adaptation    | 규칙 기반 OLLA     | 대형 AI 모델            |
+| Channel Estimation | 제한된 CSI        | 더 많은 정보 활용          |
+| Scheduling         | CPU 계산 한계      | Multi-cell 최적화      |
+| Neural Receiver    | CPU 불가능        | Waveform AI 처리      |
+
+---
+
+# 이 표가 말하는 NVIDIA의 전략
+
+중요한 것은 **"PHY를 GPU로 옮긴다"가 최종 목표가 아닙니다.**
+
+더 큰 그림은:
+
+기존:
+
+```
+계산량 제한
+
+↓
+
+가능한 알고리즘 선택
+```
+
+입니다.
+
+---
+
+AI-RAN:
+
+```
+최고 성능 알고리즘 선택
+
+↓
+
+필요한 계산량 GPU로 확보
+```
+
+입니다.
+
+즉 NVIDIA가 말하는 방향은:
+
+> **Compute-constrained RAN → Algorithm-first RAN**
+
+으로 전환하자는 것입니다. ([NVIDIA Developer][1])
+
+---
+
+## 앞서 논의한 16-Layer MU-MIMO와 연결하면
+
+이 표의 관계는 다음과 같습니다.
+
+```
+GPU
+ |
+ +-- Beamforming 계산 증가 가능
+ |
+ +-- UE Pairing 고도화 가능
+ |
+ +-- Channel Estimation 개선
+ |
+ +-- Scheduler 최적화
+ |
+ v
+더 많은 Layer 지원
+
+4 Layer
+   ↓
+16 Layer
+   ↓
+32 Layer 이상
+```
+
+따라서 **16-layer MU-MIMO 실증은 GPU의 "처리 가능성"을 보여준 것이고, Table 1은 GPU가 앞으로 RAN 성능을 더 끌어올릴 수 있는 이유를 설명하는 자료**라고 보면 됩니다. ([NVIDIA Developer][1])
+
+개인적으로 RAN 개발 관점에서 이 표에서 가장 중요한 순서는:
+
+**① Beamforming/Precoding → ② UE Pairing → ③ Channel Estimation → ④ Scheduling**
+
+이라고 봅니다. 이 네 가지가 Massive MIMO의 실제 스펙트럼 효율 차이를 만드는 핵심 영역입니다.
+
+[1]: https://developer.nvidia.com/blog/maximize-spectral-efficiency-with-ai-native-ran-and-nvidia-ai-aerial/?utm_source=chatgpt.com "Maximize Spectral Efficiency with AI-Native RAN and NVIDIA AI Aerial | NVIDIA Technical Blog"
+
+
+
+
 Massive MIMO는 GPU 기반 RAN에서 **가장 GPU 친화적인 영역**으로 평가됩니다. 이유는 대부분의 연산이 **대규모 행렬 연산(Matrix Computation)** 으로 구성되어 CUDA와 Tensor Core의 장점을 그대로 활용할 수 있기 때문입니다.
 
 현재 동향을 이해하는 데 도움이 되는 자료를 **기업 기술자료**, **학술 논문**, **향후 연구 방향**으로 나누어 정리했습니다.
