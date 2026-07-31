@@ -1,3 +1,63 @@
+| 구분                     | 내용                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **GPU 필요성**            | Massive MIMO(64T64R 이상), MU-MIMO Layer 증가, AI 기반 PHY 알고리즘 적용으로 RAN 연산량 급증                                     |
+| **기존 한계**              | ASIC/CPU 계산량 제한으로 단순화된 Beamforming, 제한된 UE Pairing, CQI+OLLA 기반 Link Adaptation 사용                            |
+| **GPU 역할**             | 대규모 Matrix 연산, AI 추론, 고복잡도 PHY 알고리즘을 실시간 처리하는 Programmable Compute Platform                                   |
+| **주요 GPU 적용 Workload** | Beamforming/Precoding, MU-MIMO UE Pairing, Channel Estimation, Scheduler, AI Link Adaptation, Neural Receiver |
+| **핵심 변화**              | "계산 가능한 알고리즘을 선택" → "최고 성능 알고리즘을 GPU로 계산"하는 RAN 구조 변화                                                         |
+
+---
+
+## GPU 기반 RAN 실증 결과
+
+| 실증                                    | Workload                      | 조건                         | 결과                                                         | 의미                                    |
+| ------------------------------------- | ----------------------------- | -------------------------- | ---------------------------------------------------------- | ------------------------------------- |
+| **SoftBank + NVIDIA AI-RAN**          | GPU 기반 PHY + 16-layer MU-MIMO | Outdoor, Massive MIMO      | 기존 4-layer 대비 약 **3배 Spectral Efficiency / Throughput**    | GPU가 고복잡도 MU-MIMO PHY를 실시간 처리 가능함을 검증 |
+| **NVIDIA AI Aerial - AI Beamforming** | AI Beamforming vs rZF         | 64T64R, 16 UE, 2 Layer/UE  | 16 Layer: 약 **1.28배**, 32 Layer: 약 **1.62배 Throughput 향상** | GPU로 더 많은 계산량의 Beamforming 적용 가능      |
+| **AI Link Adaptation**                | DRL 기반 MCS 선택                 | CQI/ACK/NACK/Channel 정보 활용 | Cell Edge 약 **1.3배 Throughput 향상**                         | 기존 CQI+OLLA 대비 AI 기반 최적화 가능           |
+
+---
+
+## 주요 RAN Workload별 GPU 가치
+
+| Workload                    | 기존 방식            | GPU 적용 효과                        |
+| --------------------------- | ---------------- | -------------------------------- |
+| **MU-MIMO UE Pairing**      | 제한된 UE 조합 검색     | 더 많은 UE 조합 평가 → 최적 사용자 선택        |
+| **Beamforming / Precoding** | rZF 등 계산량 낮은 방식  | 고복잡도 AI Beamforming 적용 → SINR 개선 |
+| **Channel Estimation**      | 제한된 CSI 정보 활용    | AI 기반 CSI 추정 → 정확도 향상            |
+| **Link Adaptation**         | CQI + OLLA       | AI 기반 MCS 결정 → 채널 변화 대응 향상       |
+| **Scheduler**               | 제한된 Search Space | Multi-cell/Traffic/Beam 고려 최적화   |
+| **Neural Receiver**         | 수학 기반 Receiver   | AI 기반 Detection 가능               |
+
+---
+
+## 향후 예상 방향
+
+| 시기                 | 예상 기술 변화                                                | GPU 역할                   |
+| ------------------ | ------------------------------------------------------- | ------------------------ |
+| **5G Advanced**    | 16 Layer → 32 Layer MU-MIMO, 고도 Beamforming             | Massive MIMO 계산 엔진       |
+| **5G Advanced~6G** | AI Scheduler, AI Channel Estimation, AI Link Adaptation | AI + PHY 통합 실행 플랫폼       |
+| **6G**             | AI Native PHY, Neural Receiver, 초대규모 MIMO(512T/1024T급)  | Software-defined RAN 플랫폼 |
+
+---
+
+## 핵심 결론
+
+| 항목               | 요약                                                     |
+| ---------------- | ------------------------------------------------------ |
+| **성능 향상의 직접 원인** | 4 Layer → 16 Layer 등 Spatial Multiplexing 증가           |
+| **GPU의 역할**      | 증가한 PHY 계산량을 실시간 처리 가능하게 함                             |
+| **GPU의 진짜 가치**   | ASIC 때문에 제한되던 고복잡도 알고리즘 적용 가능                          |
+| **향후 방향**        | RAN이 전용 ASIC 중심 → GPU 기반 Programmable/AI Native 구조로 변화 |
+
+**한 줄 요약:**
+**GPU는 RAN throughput을 직접 높이는 장치라기보다, Massive MIMO와 AI 기반 PHY 알고리즘을 실시간 실행할 수 있게 하여 스펙트럼 효율을 높이는 핵심 컴퓨팅 플랫폼입니다.**
+
+
+
+
+
+
 좋은 질문입니다. **Table 1. "Value of GPU by RAN workload"는 이 기사의 핵심 표**입니다. 이 표가 설명하는 것은 단순히 "GPU가 빠르다"가 아니라,
 
 > **RAN의 어떤 알고리즘들이 계산량 제한 때문에 단순화되어 왔으며, GPU를 사용하면 어떤 부분을 더 고도화하여 스펙트럼 효율을 높일 수 있는가**
